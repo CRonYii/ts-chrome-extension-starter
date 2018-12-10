@@ -21,7 +21,7 @@ const App = connectStorage(
         }
 
         clearValue = () => {
-            chromeStorage.clearAllStorage();
+            chromeStorage.clearStorage();
         }
 
         sendMsg = () => {

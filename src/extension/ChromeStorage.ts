@@ -1,30 +1,33 @@
 import StorageArea = chrome.storage.StorageArea;
 
+export interface IChromeStorage {
+    initialValue: any,
+    storageArea?: StorageArea
+}
+
 export class ChromeStorage {
 
     public static readonly localStorage: StorageArea = chrome.storage.local;
     public static readonly syncStorage: StorageArea = chrome.storage.sync;
 
+    private readonly initialValue: any;
+
     private storage: any;
+    private storageArea: StorageArea;
     private numSubscribes: number = 0;
     private subscriberMap: Map<number, (storage: any) => any> = new Map();
 
-    constructor(initialValue) {
-        this.storage = initialValue;
+    constructor(option: IChromeStorage) {
+        this.initialValue = option.initialValue;
+        this.storageArea = option.storageArea || ChromeStorage.localStorage;
+        this.storage = Object.assign({}, this.initialValue);
         this.init();
     }
 
     private async init() {
-        const local = await ChromeStorage.getExtensionStorage(ChromeStorage.localStorage);
-        const sync = await ChromeStorage.getExtensionStorage(ChromeStorage.syncStorage);
-        this.storage = { ...local, ...sync };
+        this.storage = await ChromeStorage.getExtensionStorage(ChromeStorage.localStorage);
         this.triggerSubscribers();
-        chrome.storage.onChanged.addListener((changes: Object) => {
-            for (let key in changes) {
-                this.storage[key] = changes[key].newValue;
-            }
-            this.triggerSubscribers();
-        });
+        chrome.storage.onChanged.addListener(this.updateStorageEvent);
     }
 
     public subscribe = (func: (storage: any) => any) => {
@@ -45,7 +48,7 @@ export class ChromeStorage {
         });
     };
 
-    public setItems = (param: any, storageArea = ChromeStorage.localStorage) => {
+    public setItems = (param: any) => {
         let items = {};
         if (typeof param === 'function') {
             items = param(this.storage);
@@ -54,7 +57,7 @@ export class ChromeStorage {
         }
 
         return new Promise((resolve, reject) => {
-            storageArea.set(items, () => {
+            this.storageArea.set(items, () => {
                 const error = chrome.runtime.lastError;
                 if (error) {
                     reject({ items, error });
@@ -71,16 +74,15 @@ export class ChromeStorage {
         });
     }
 
-    public clearAllStorage = () => {
-        const local = this.clearStorage(ChromeStorage.localStorage);
-        const sync = this.clearStorage(ChromeStorage.syncStorage);
-        return Promise.all([local, sync]);
+    public clearStorage = () => {
+        return this.setItems(this.initialValue);
     };
 
-    public clearStorage = (storageArea: StorageArea) => {
-        return new Promise(resolve => {
-            storageArea.clear(resolve);
-        });
+    private updateStorageEvent = (changes: Object) => {
+        for (let key in changes) {
+            this.storage[key] = changes[key].newValue;
+        }
+        this.triggerSubscribers();
     };
 
     public getItems = () => {
