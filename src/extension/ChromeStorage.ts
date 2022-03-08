@@ -62,7 +62,7 @@ export class ChromeStorage {
                 if (error) {
                     reject({ items, error });
                 }
-                resolve();
+                resolve(true);
             })
         });
 

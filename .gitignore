@@ -1,5 +1,6 @@
 npm-debug.log
 node_modules/
-dist/js
+dist/*.js
 tmp/
 .idea
+*.LICENSE.txt

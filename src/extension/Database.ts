@@ -1,46 +1,52 @@
-import idb, { DB, UpgradeDB } from 'idb';
+import { DBSchema, IDBPDatabase, IDBPObjectStore, openDB, StoreNames } from 'idb';
 import { IDBStore, IStore } from './Store';
 
-export interface IDatabase {
+export interface IDatabase<DBTypes extends DBSchema | unknown> {
     name: string,
-    storeConfigs: IStore[],
+    storeConfigs: IStore<DBTypes>[],
     version?: number
 }
 
-export class Database {
+export class Database<DBTypes extends DBSchema | unknown> {
 
-    public static createObjectStoreIfDoesNotExist = (upgradeDb: UpgradeDB, name: string, optionalParameters?: IDBObjectStoreParameters) => {
-        if (!upgradeDb.objectStoreNames.contains(name)) {
-            return upgradeDb.createObjectStore(name, optionalParameters);
-        }
-    }
+    protected dbPromise: Promise<IDBPDatabase<DBTypes>>;
+    protected stores = new Map<string, IDBStore<DBTypes>>();
 
-    protected dbPromise: Promise<DB>;
-    protected stores: Map<string, IDBStore> = new Map<string, IDBStore>();
-
-    public constructor(option: IDatabase) {
-        this.dbPromise = idb.open(option.name, option.version, this.newVersionInit);
-        option.storeConfigs.forEach((option) => {
-            this.stores.set(option.name, new IDBStore(this.dbPromise, option));
+    public constructor(options: IDatabase<DBTypes>) {
+        this.dbPromise = openDB<DBTypes>(options.name, options.version,
+            {
+                upgrade: this.newVersionInit // XXX: This does not support upgrade from older to newer version.
+            });
+        options.storeConfigs.forEach((store) => {
+            this.stores.set(store.name, new IDBStore<DBTypes>(this.dbPromise, store));
         });
     }
 
-    public getStore = (name: string): IDBStore => {
+    public getStore = (name: string): IDBStore<DBTypes> => {
         return this.stores.get(name);
     }
 
-    private createObjectStore = (upgradeDb: UpgradeDB, store: IDBStore) => {
-        let objStore = Database.createObjectStoreIfDoesNotExist(upgradeDb, store.name, store.options);
+    public createObjectStoreIfDoesNotExist =
+        (database: IDBPDatabase<DBTypes>, name: StoreNames<DBTypes>,
+            optionalParameters?: IDBObjectStoreParameters) => {
+            if (!database.objectStoreNames.contains(name)) {
+                return database.createObjectStore(name, optionalParameters);
+            }
+        }
+
+    private createObjectStore = (database: IDBPDatabase<DBTypes>, store: IDBStore<DBTypes>) => {
+        let objStore = this.createObjectStoreIfDoesNotExist(database, store.name, store.options);
         store.indexes.forEach(index => {
+            index.name
             if (!objStore.indexNames.contains(index.name)) {
                 objStore.createIndex(index.name, index.keyPath, index.optionalParameters);
             }
         });
     }
 
-    private newVersionInit = (upgradeDb: UpgradeDB): void => {
+    private newVersionInit = (database: IDBPDatabase<DBTypes>): void => {
         this.stores.forEach(store => {
-            this.createObjectStore(upgradeDb, store);
+            this.createObjectStore(database, store);
         });
     };
 

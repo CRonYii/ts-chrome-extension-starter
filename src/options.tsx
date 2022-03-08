@@ -3,7 +3,7 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { ActionType } from "./entity/ActionType";
 import { ChromeStorageProps } from "./extension/ChromeStorageContext";
-import "./extension/ExtensionDatabase";
+import "./util/ExtensionDatabase";
 import { Action, ExtensionHost, MessengerHost } from "./extension/Messenger";
 import { chromeStorage, ChromeStorageProvider, connectStorage } from "./util/ChromeStorageUtil";
 

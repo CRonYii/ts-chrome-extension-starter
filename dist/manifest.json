@@ -1,25 +1,22 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "ts-chrome-extension-starter",
   "description": "ts-chrome-extension-starter",
   "version": "1.0",
   "options_page": "options.html",
-  "browser_action": {
+  "action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
-  "content_scripts": [
-
-  ],
+  "content_scripts": [],
   "background": {
-    "scripts": [
-      "js/bundle.js",
-      "js/background.js",
-      "js/hot-reload.js"
-    ]
+    "service_worker": "background.js"
   },
   "permissions": [
     "storage",
     "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "*://*/*"
   ]
 }

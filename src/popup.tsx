@@ -1,8 +1,9 @@
+import './extension/HotReload';
 import { Button } from "antd";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { ChromeStorageProps } from "./extension/ChromeStorageContext";
-import "./extension/ExtensionDatabase";
+import "./util/ExtensionDatabase";
 import { ActionType } from "./entity/ActionType";
 import { Action, MessengerHost, ExtensionHost } from "./extension/Messenger";
 import { chromeStorage, connectStorage, ChromeStorageProvider } from "./util/ChromeStorageUtil";
